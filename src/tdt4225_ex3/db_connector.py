@@ -1,4 +1,4 @@
-from pymongo import MongoClient, version
+from pymongo import MongoClient
 
 
 class DbConnector:
@@ -12,18 +12,17 @@ class DbConnector:
     PASSWORD = "test123" // The password you set for said user
     """
 
-    def __init__(self,
-                 DATABASE='DATABASE_NAME',
-                 HOST="tdt4225-xx.idi.ntnu.no",
-                 USER="TEST_USER",
-                 PASSWORD="test123"):
-        uri = "mongodb://%s:%s@%s/%s" % (USER, PASSWORD, HOST, DATABASE)
+    def __init__(
+        self,
+        DATABASE="DATABASE_NAME",
+        HOST="tdt4225-xx.idi.ntnu.no",
+        USER="TEST_USER",
+        PASSWORD="test123",
+    ):
+        uri = f"mongodb://{USER}:{PASSWORD}@{HOST}/{DATABASE}"
         # Connect to the databases
-        try:
-            self.client = MongoClient(uri)
-            self.db = self.client[DATABASE]
-        except Exception as e:
-            print("ERROR: Failed to connect to db:", e)
+        self.client = MongoClient(uri)
+        self.db = self.client[DATABASE]
 
         # get database information
         print("You are connected to the database:", self.db.name)
@@ -34,4 +33,4 @@ class DbConnector:
         # close the DB connection
         self.client.close()
         print("\n-----------------------------------------------")
-        print("Connection to %s-db is closed" % self.db.name)
+        print(f"Connection to {self.db.name}-db is closed")
