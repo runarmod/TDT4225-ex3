@@ -1,0 +1,19 @@
+[project]
+name = "tdt4225-ex3"
+version = "0.1.0"
+readme = "README.md"
+authors = [
+    { name = "Runar Saur Modahl", email = "runarsm@ntnu.no" },
+    { name = "Martin Sandaker Reve", email = "martirev@ntnu.no" },
+    { name = "Morten Madsen Lyngstad", email = "morteml@ntnu.no" },
+]
+requires-python = ">=3.14"
+dependencies = [
+    "haversine>=2.9.0",
+    "pymongo>=4.18.3",
+    "tabulate>=0.10.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.9,<0.13.0"]
+build-backend = "uv_build"
