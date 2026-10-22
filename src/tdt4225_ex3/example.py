@@ -1,6 +1,6 @@
 from pprint import pprint
 
-from src.tdt4225_ex3.db_connector import DbConnector
+from tdt4225_ex3.db_connector import DbConnector
 
 
 class ExampleProgram:
@@ -52,7 +52,7 @@ class ExampleProgram:
         collection.drop()
 
     def show_coll(self):
-        collections = self.client["test"].list_collection_names()
+        collections = self.db.list_collection_names()
         print(collections)
 
 
