@@ -118,7 +118,43 @@ def task_4(db: Database):
 
 
 def task_5(db: Database):
-    raise NotImplementedError
+    return db.movies.aggregate(
+        [
+            {
+                "$match": {
+                    "release_date": {"$ne": None},
+                    "$expr": {"$gt": [{"$size": "$genres"}, 0]},
+                }
+            },
+            {
+                "$group": {
+                    "_id": {
+                        "decade": {
+                            "$subtract": [
+                                {"$year": "$release_date"},
+                                {"$mod": [{"$year": "$release_date"}, 10]},
+                            ]
+                        },
+                        "primary_genre": {"$first": "$genres.name"},
+                    },
+                    "median_runtime": {
+                        "$median": {"input": "$runtime", "method": "approximate"}
+                    },
+                    "movie_count": {"$sum": 1},
+                }
+            },
+            {
+                "$project": {
+                    "decade": "$_id.decade",
+                    "primary_genre": "$_id.primary_genre",
+                    "median_runtime": 1,
+                    "movie_count": 1,
+                    "_id": 0,
+                }
+            },
+            {"$sort": {"decade": 1, "median_runtime": -1}},
+        ]
+    )
 
 
 def task_6(db: Database):
