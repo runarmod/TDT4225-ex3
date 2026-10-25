@@ -308,7 +308,37 @@ def task_8(db: Database):
 
 
 def task_9(db: Database):
-    raise NotImplementedError
+    return db.movies.aggregate(
+        [
+            {
+                "$match": {
+                    "original_language": {"$ne": "en"},
+                    "$or": [
+                        {"production_countries.iso_3166_1": "US"},
+                        {"production_companies.name": "United States"},
+                    ],
+                }
+            },
+            {"$sort": {"popularity": -1}},
+            {
+                "$group": {
+                    "_id": "$original_language",
+                    "count": {"$sum": 1},
+                    "example_title": {"$first": "$title"},
+                }
+            },
+            {"$sort": {"count": -1}},
+            {"$limit": 10},
+            {
+                "$project": {
+                    "_id": 0,
+                    "original_language": "$_id",
+                    "count": 1,
+                    "example_title": 1,
+                }
+            },
+        ]
+    )
 
 
 def task_10(db: Database):
