@@ -66,7 +66,31 @@ def task_2(db: Database):
 
 
 def task_3(db: Database):
-    raise NotImplementedError
+    return db.movies.aggregate(
+        [
+            {"$project": {"genres": "$genres.name", "cast.id": 1, "cast.name": 1}},
+            {"$unwind": "$cast"},
+            {"$unwind": {"path": "$genres", "preserveNullAndEmptyArrays": True}},
+            {
+                "$group": {
+                    "_id": "$cast.id",
+                    "name": {"$first": "$cast.name"},
+                    "movies": {"$addToSet": "$_id"},
+                    "genres": {"$addToSet": "$genres"},
+                }
+            },
+            {"$match": {"$expr": {"$gte": [{"$size": "$movies"}, 10]}}},
+            {
+                "$project": {
+                    "name": 1,
+                    "genre_count": {"$size": "$genres"},
+                    "example_genres": {"$slice": ["$genres", 5]},
+                }
+            },
+            {"$sort": {"genre_count": -1}},
+            {"$limit": 10},
+        ]
+    )
 
 
 def task_4(db: Database):
