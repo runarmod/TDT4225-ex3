@@ -32,6 +32,16 @@ def task_1(db: Database):
             {"$match": {"movie_count": {"$gte": 5}}},
             {"$sort": {"median_revenue": -1}},
             {"$limit": 10},
+            {
+                "$project": {
+                    "_id": 0,
+                    "director_id": "$_id",
+                    "name": 1,
+                    "median_revenue": 1,
+                    "movie_count": 1,
+                    "vote_average": 1,
+                }
+            },
         ]
     )
 
@@ -85,6 +95,8 @@ def task_3(db: Database):
             {"$match": {"$expr": {"$gte": [{"$size": "$movies"}, 10]}}},
             {
                 "$project": {
+                    "_id": 0,
+                    "actor_id": "$_id",
                     "name": 1,
                     "genre_count": {"$size": "$genres"},
                     "example_genres": {"$slice": ["$genres", 5]},
@@ -116,6 +128,28 @@ def task_4(db: Database):
             {"$match": {"movie_count": {"$gte": 3}}},
             {"$sort": {"total_revenue": -1}},
             {"$limit": 10},
+            {
+                "$project": {
+                    "_id": 0,
+                    "collection_id": "$_id",
+                    "name": 1,
+                    "total_revenue": 1,
+                    "movie_count": 1,
+                    "median_vote_average": 1,
+                    "earliest_release": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$earliest_release",
+                        }
+                    },
+                    "latest_release": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$latest_release",
+                        }
+                    },
+                }
+            },
         ]
     )
 
