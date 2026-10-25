@@ -46,6 +46,8 @@ def main():
         db.movies.create_index("movielens_ids")
         db.ratings.create_index("userId")
         db.ratings.create_index("movieId")
+        # Text search over overview and tagline
+        db.movies.create_index([("overview", "text"), ("tagline", "text")])
     finally:
         connection.close_connection()
 

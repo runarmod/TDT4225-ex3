@@ -227,7 +227,23 @@ def task_6(db: Database):
 
 
 def task_7(db: Database):
-    raise NotImplementedError
+    return db.movies.aggregate(
+        [
+            # Movies matching "neo-noir" also matches on "noir", so we only need "noir"
+            {"$match": {"$text": {"$search": "noir"}, "vote_count": {"$gte": 50}}},
+            {
+                "$project": {
+                    "_id": 0,
+                    "title": 1,
+                    "year": {"$year": "$release_date"},
+                    "vote_average": 1,
+                    "vote_count": 1,
+                }
+            },
+            {"$sort": {"vote_average": -1}},
+            {"$limit": 20},
+        ]
+    )
 
 
 def task_8(db: Database):
