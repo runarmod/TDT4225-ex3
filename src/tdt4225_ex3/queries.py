@@ -247,7 +247,64 @@ def task_7(db: Database):
 
 
 def task_8(db: Database):
-    raise NotImplementedError
+    def uniquePeople(array):
+        # One {id, name} per person, so a director or actor listed twice in a movie counts once
+        return {
+            "$setUnion": [
+                {
+                    "$map": {
+                        "input": array,
+                        "in": {"id": "$$this.id", "name": "$$this.name"},
+                    }
+                }
+            ]
+        }
+
+    return db.movies.aggregate(
+        [
+            {"$match": {"vote_count": {"$gte": 100}}},
+            {
+                "$project": {
+                    "vote_average": 1,
+                    "revenue": 1,
+                    "directors": uniquePeople(
+                        {
+                            "$filter": {
+                                "input": "$crew",
+                                "cond": {"$eq": ["$$this.job", "Director"]},
+                            }
+                        }
+                    ),
+                    "actors": uniquePeople("$cast"),
+                }
+            },
+            {"$unwind": "$directors"},
+            {"$unwind": "$actors"},
+            {
+                "$group": {
+                    "_id": {"director": "$directors.id", "actor": "$actors.id"},
+                    "director": {"$first": "$directors.name"},
+                    "actor": {"$first": "$actors.name"},
+                    "movie_count": {"$sum": 1},
+                    "mean_vote_average": {"$avg": "$vote_average"},
+                    "mean_revenue": {"$avg": "$revenue"},
+                }
+            },
+            {"$match": {"movie_count": {"$gte": 3}}},
+            {"$sort": {"mean_vote_average": -1}},
+            {"$limit": 20},
+            {
+                "$project": {
+                    "_id": 0,
+                    "director": 1,
+                    "actor": 1,
+                    "movie_count": 1,
+                    "mean_vote_average": 1,
+                    "mean_revenue": 1,
+                }
+            },
+        ]
+    )
 
 
 def task_9(db: Database):
