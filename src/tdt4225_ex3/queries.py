@@ -158,7 +158,72 @@ def task_5(db: Database):
 
 
 def task_6(db: Database):
-    raise NotImplementedError
+    return db.movies.aggregate(
+        [
+            {"$match": {"release_date": {"$ne": None}}},
+            {
+                "$project": {
+                    "decade": {
+                        "$subtract": [
+                            {"$year": "$release_date"},
+                            {"$mod": [{"$year": "$release_date"}, 10]},
+                        ]
+                    },
+                    "known": {
+                        "$filter": {
+                            "input": {
+                                "$slice": [
+                                    {
+                                        "$sortArray": {
+                                            "input": "$cast",
+                                            "sortBy": {"order": 1},
+                                        }
+                                    },
+                                    5,
+                                ]
+                            },
+                            "cond": {"$in": ["$$this.gender", [1, 2]]},
+                        }
+                    },
+                },
+            },
+            {"$match": {"$expr": {"$gt": [{"$size": "$known"}, 0]}}},
+            {
+                "$project": {
+                    "decade": 1,
+                    "female_proportion": {
+                        "$divide": [
+                            {
+                                "$size": {
+                                    "$filter": {
+                                        "input": "$known",
+                                        "cond": {"$eq": ["$$this.gender", 1]},
+                                    }
+                                }
+                            },
+                            {"$size": "$known"},
+                        ]
+                    },
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$decade",
+                    "avg_female_proportion": {"$avg": "$female_proportion"},
+                    "movie_count": {"$sum": 1},
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "decade": "$_id",
+                    "avg_female_proportion": 1,
+                    "movie_count": 1,
+                }
+            },
+            {"$sort": {"avg_female_proportion": -1}},
+        ]
+    )
 
 
 def task_7(db: Database):
