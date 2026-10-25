@@ -1,4 +1,6 @@
 import sys
+from collections import defaultdict
+from itertools import combinations
 from pprint import pprint
 from typing import TYPE_CHECKING
 
@@ -32,7 +34,35 @@ def task_1(db: Database):
 
 
 def task_2(db: Database):
-    raise NotImplementedError
+    movies = db.movies.find({}, {"vote_average": 1, "cast.id": 1, "cast.name": 1})
+
+    id_to_name: dict[int, str] = {}
+    pair_counts: dict[tuple[int, int], int] = defaultdict(int)
+    pair_ratings: dict[tuple[int, int], list[float]] = defaultdict(list)
+
+    for movie in movies:
+        for actor in movie["cast"]:
+            id_to_name[actor["id"]] = actor["name"]
+
+        # sorted makes sure that we dont store pairs "a,b" and "b,a" as different pairs
+        for pair in combinations(sorted({actor["id"] for actor in movie["cast"]}), 2):
+            pair_counts[pair] += 1
+            if movie["vote_average"] is not None:
+                pair_ratings[pair].append(movie["vote_average"])
+
+    result = [
+        {
+            "actor_a": id_to_name[a],
+            "actor_b": id_to_name[b],
+            "co_appearances": count,
+            "avg_vote_average": sum(pair_ratings[a, b]) / len(pair_ratings[a, b])
+            if pair_ratings[a, b]
+            else None,
+        }
+        for (a, b), count in pair_counts.items()
+        if count >= 3
+    ]
+    return sorted(result, key=lambda r: r["co_appearances"], reverse=True)
 
 
 def task_3(db: Database):
