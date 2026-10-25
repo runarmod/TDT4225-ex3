@@ -94,7 +94,27 @@ def task_3(db: Database):
 
 
 def task_4(db: Database):
-    raise NotImplementedError
+    return db.movies.aggregate(
+        [
+            {"$match": {"belongs_to_collection": {"$ne": None}}},
+            {
+                "$group": {
+                    "_id": "$belongs_to_collection.id",
+                    "name": {"$first": "$belongs_to_collection.name"},
+                    "total_revenue": {"$sum": "$revenue"},
+                    "movie_count": {"$sum": 1},
+                    "median_vote_average": {
+                        "$median": {"input": "$vote_average", "method": "approximate"}
+                    },
+                    "earliest_release": {"$min": "$release_date"},
+                    "latest_release": {"$max": "$release_date"},
+                }
+            },
+            {"$match": {"movie_count": {"$gte": 3}}},
+            {"$sort": {"total_revenue": -1}},
+            {"$limit": 10},
+        ]
+    )
 
 
 def task_5(db: Database):
