@@ -1,5 +1,5 @@
 services:
-    mongodb:
+    mongo:
         image: mongo:7.0.1
         container_name: mongodb
         ports:
@@ -10,6 +10,21 @@ services:
             - mongo_data:/data/db
             - ./init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh
         restart: unless-stopped
+
+    mongo-express:
+        image: mongo-express
+        container_name: mongo-express
+        environment:
+            ME_CONFIG_MONGODB_SERVER: mongodb
+            ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_INITDB_USER}
+            ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_INITDB_PWD}
+            ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+            ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+            ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+        ports:
+            - 8081:8081
+        depends_on:
+            - mongo
 
 volumes:
     mongo_data:
