@@ -1,23 +1,9 @@
 import csv
 import io
 import os
-from collections import namedtuple
 from pathlib import Path
 
 import polars as pl
-
-Dataset = namedtuple(
-    "dataset",
-    [
-        "credits",
-        "keywords",
-        "links_small",
-        "links",
-        "movies_metadata",
-        "ratings_small",
-        "ratings",
-    ],
-)
 
 
 def read_csv_merging_split_rows(path):
@@ -46,12 +32,33 @@ def get_data():
     # Metadata had mistakes in the lines
     movies_metadata = read_csv_merging_split_rows(data_dir / "movies_metadata.csv")
 
-    return Dataset(
-        credits=pl.read_csv(data_dir / "credits.csv"),
-        keywords=pl.read_csv(data_dir / "keywords.csv"),
-        links_small=pl.read_csv(data_dir / "links_small.csv"),
-        links=pl.read_csv(data_dir / "links.csv"),
-        movies_metadata=movies_metadata,
-        ratings_small=pl.read_csv(data_dir / "ratings_small.csv"),
-        ratings=pl.read_csv(data_dir / "ratings.csv"),
+    return {
+        "credits": pl.read_csv(data_dir / "credits.csv"),
+        "keywords": pl.read_csv(data_dir / "keywords.csv"),
+        "links_small": pl.read_csv(data_dir / "links_small.csv"),
+        "links": pl.read_csv(data_dir / "links.csv"),
+        "movies_metadata": movies_metadata,
+        "ratings_small": pl.read_csv(data_dir / "ratings_small.csv"),
+        "ratings": pl.read_csv(data_dir / "ratings.csv"),
+    }
+
+
+def get_cleaned_data():
+    datasets = get_data()
+    datasets["movies_metadata"] = (
+        datasets["movies_metadata"]
+        .sort("vote_count", "popularity", descending=True)
+        .unique("id", keep="first", maintain_order=True)
     )
+    # 0 means unknown, so replace it with null
+    datasets["movies_metadata"] = datasets["movies_metadata"].with_columns(
+        pl.when(pl.col(col) != 0).then(pl.col(col)).alias(col)
+        for col in ("budget", "revenue", "runtime")
+    )
+
+    datasets["credits"] = (
+        datasets["credits"]
+        .sort(pl.col("crew").str.count_matches("'credit_id'"), descending=True)
+        .unique("id", keep="first", maintain_order=True)
+    )
+    return datasets
