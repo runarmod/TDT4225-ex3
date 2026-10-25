@@ -1,3 +1,4 @@
+import ast
 import csv
 import io
 import os
@@ -76,3 +77,49 @@ def get_cleaned_data():
         .unique("id", keep="first", maintain_order=True)
     )
     return datasets
+
+
+def parse(value):
+    """Parse a Python-literal json column. Missing values become an empty list."""
+    return ast.literal_eval(value) if value else []
+
+
+def build_movies(datasets: dict[str, pl.DataFrame]):
+    credits = {row["id"]: row for row in datasets["credits"].iter_rows(named=True)}
+    keywords = {
+        row["id"]: row["keywords"] for row in datasets["keywords"].iter_rows(named=True)
+    }
+
+    # links maps tmdbId to the MovieLens movieId used in ratings. A few movies have more than one
+    movielens_ids = dict(
+        datasets["links"]
+        .drop_nulls("tmdbId")
+        .group_by("tmdbId")
+        .agg("movieId")
+        .iter_rows()
+    )
+
+    movies = []
+    for m in datasets["movies_metadata"].iter_rows(named=True):
+        movie_id = m.pop("id")
+        credit = credits.get(movie_id, {})
+        for col in (
+            "genres",
+            "production_companies",
+            "production_countries",
+            "spoken_languages",
+        ):
+            m[col] = parse(m[col])
+
+        movies.append(
+            {
+                "_id": movie_id,
+                **m,
+                "belongs_to_collection": parse(m["belongs_to_collection"]) or None,
+                "keywords": parse(keywords.get(movie_id)),
+                "cast": sorted(parse(credit.get("cast")), key=lambda c: c["order"]),
+                "crew": parse(credit.get("crew")),
+                "movielens_ids": movielens_ids.get(movie_id, []),
+            }
+        )
+    return movies
