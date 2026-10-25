@@ -45,6 +45,8 @@ def get_data():
 
 def get_cleaned_data():
     datasets = get_data()
+    datasets = {k: v.unique() for k, v in datasets.items()}
+
     datasets["movies_metadata"] = (
         datasets["movies_metadata"]
         .sort("vote_count", "popularity", descending=True)
@@ -55,6 +57,18 @@ def get_cleaned_data():
         pl.when(pl.col(col) != 0).then(pl.col(col)).alias(col)
         for col in ("budget", "revenue", "runtime")
     )
+    # An average of no votes is meaningless
+    datasets["movies_metadata"] = datasets["movies_metadata"].with_columns(
+        pl.when(pl.col("vote_count") > 0)
+        .then(pl.col("vote_average"))
+        .alias("vote_average")
+    )
+    # Datetime, not date, since pymongo can only store datetimes
+    datasets["movies_metadata"] = datasets["movies_metadata"].with_columns(
+        pl.col("release_date").str.to_datetime("%Y-%m-%d")
+    )
+    for name in ("ratings", "ratings_small"):
+        datasets[name] = datasets[name].with_columns(pl.from_epoch("timestamp"))
 
     datasets["credits"] = (
         datasets["credits"]
