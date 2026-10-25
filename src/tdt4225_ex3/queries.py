@@ -9,7 +9,26 @@ if TYPE_CHECKING:
 
 
 def task_1(db: Database):
-    raise NotImplementedError
+    return db.movies.aggregate(
+        [
+            {"$unwind": "$crew"},
+            {"$match": {"crew.job": "Director"}},
+            {
+                "$group": {
+                    "_id": "$crew.id",
+                    "name": {"$first": "$crew.name"},
+                    "median_revenue": {
+                        "$median": {"input": "$revenue", "method": "approximate"}
+                    },
+                    "movie_count": {"$sum": 1},
+                    "vote_average": {"$avg": "$vote_average"},
+                }
+            },
+            {"$match": {"movie_count": {"$gte": 5}}},
+            {"$sort": {"median_revenue": -1}},
+            {"$limit": 10},
+        ]
+    )
 
 
 def task_2(db: Database):
