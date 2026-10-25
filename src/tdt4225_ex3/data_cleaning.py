@@ -1,7 +1,6 @@
 import ast
 import csv
 import io
-import os
 from pathlib import Path
 
 import polars as pl
@@ -28,7 +27,7 @@ def read_csv_merging_split_rows(path):
 
 
 def get_data():
-    data_dir = Path(os.path.abspath("")).resolve().parents[1] / "data"
+    data_dir = Path(__file__).resolve().parents[2] / "data"
 
     # Metadata had mistakes in the lines
     movies_metadata = read_csv_merging_split_rows(data_dir / "movies_metadata.csv")
