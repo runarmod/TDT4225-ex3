@@ -1,8 +1,11 @@
+import heapq
 import sys
 from collections import defaultdict
 from itertools import combinations
 from pprint import pprint
 from typing import TYPE_CHECKING
+
+from pymongo.command_cursor import CommandCursor
 
 from tdt4225_ex3.db_connector import DbConnector
 
@@ -342,7 +345,51 @@ def task_9(db: Database):
 
 
 def task_10(db: Database):
-    raise NotImplementedError
+    genres: dict[int, set[int]] = defaultdict(set)
+    for movie in db.movies.find({}, {"movielens_ids": 1, "genres.id": 1}):
+        for movielens_id in movie["movielens_ids"]:
+            genres[movielens_id] |= {g["id"] for g in movie["genres"]}
+
+    users = db.ratings.aggregate(
+        [
+            {
+                "$group": {
+                    "_id": "$userId",
+                    "ratings_count": {"$sum": 1},
+                    "std": {"$stdDevPop": "$rating"},
+                    "movies": {"$push": "$movieId"},
+                }
+            },
+            {"$match": {"ratings_count": {"$gte": 20}}},
+            {
+                "$project": {
+                    "_id": 0,
+                    "userId": "$_id",
+                    "movies": 1,
+                    "ratings_count": 1,
+                    "variance": {"$pow": ["$std", 2]},
+                }
+            },
+        ]
+    )
+    user_stats = [
+        {
+            "userId": user["userId"],
+            "ratings_count": user["ratings_count"],
+            "variance": user["variance"],
+            "distinct_genres": len(
+                {genre for m in user["movies"] for genre in genres.get(m, ())}
+            ),
+        }
+        for user in users
+    ]
+
+    return {
+        "most_genre_diverse": heapq.nlargest(
+            10, user_stats, key=lambda s: s["distinct_genres"]
+        ),
+        "highest_variance": heapq.nlargest(10, user_stats, key=lambda s: s["variance"]),
+    }
 
 
 TASKS = {
@@ -366,7 +413,10 @@ def main():
     try:
         for n in numbers:
             print(f"\nTask {n}:")
-            f = TASKS[n]
-            pprint(list(f(connection.db)))
+            results = TASKS[n](connection.db)
+            if isinstance(results, CommandCursor):
+                pprint(list(results))
+            else:
+                pprint(results)
     finally:
         connection.close_connection()
