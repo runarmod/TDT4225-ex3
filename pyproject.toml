@@ -18,7 +18,6 @@ dependencies = [
 ]
 
 [project.scripts]
-example = "tdt4225_ex3.example:main"
 insert = "tdt4225_ex3.insert_data:main"
 queries = "tdt4225_ex3.queries:main"
 
